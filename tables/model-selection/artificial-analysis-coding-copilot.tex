@@ -1,0 +1,12 @@
+\import{tables/}{tab-styling.tex}
+
+\begin{tabular}{l|D{2}{2} D{2}{2}|c}
+  \multirow[b]{2}{*}{Model ID}       & \multicolumn{2}{c|}{Index Score} & \multirow{2}{*}{\makecell[cb]{Reasoning \\ Model}} \\\cline{2-3}
+                                     & {Intelligence} & {Coding}           &                                         \\\hline
+  o4-mini                            & 65.05        & 63.48            & \y                                      \\
+  gemini-2-5-pro                     & 64.63        & 61.46            & \y                                      \\
+  gpt-4-1                            & 46.77        & 41.90            & \n                                      \\
+  claude-3-7-sonnet-thinking         & 46.98        & 43.79            & \y                                      \\
+  claude-4-sonnet                    & 45.72        & 41.07            & \n                                      \\
+  gpt-4o                             & 29.61        & 32.12            & \n                                      \\
+\end{tabular}

@@ -1,0 +1,83 @@
+\newcommand{\trkPlus}{\(\text{trk}_{\scalebox{0.6}{$+$}}\)\xspace}
+\newcommand{\trkMinus}{\(\text{trk}_{\scalebox{0.6}{$-$}}\)\xspace}
+\SetAlgoVlined
+\begin{algorithm}[H]
+  \subimport{}{alg-styling.tex}
+  \newcommand{\arcangle}{%
+    \mathord{<\mspace{-9mu}\mathrel{)}\mspace{2mu}}%
+  }
+
+  \Func{V0FinderModule::event()}
+  {
+    tracksPlus $\coloneq \left(\text{track} \in \text{StoreArray\textlangle Track\textrangle}\ :\ \text{track.charge} > 0\right)$\;
+    tracksMinus $\coloneq \left(\text{track} \in \text{StoreArray\textlangle Track\textrangle}\ :\ \text{track.charge} < 0\right)$\;
+    \;
+    \For{%
+      trkPair $\in \left(\text{tracksPlus} \times \text{tracksMinus}\right)$
+    }{
+      \tcp*[l]{skip precut for nearly parallel tracks since position approximation inaccurate:}
+      \If{%
+        $\cos{\left(\arcangle\ \text{trkPair}\right)} \leq \text{precutCosAlpha}$
+      }{
+
+        \If%
+        (\tcp*[f]{filter out decay vertices in beam pipe})%
+        {trkPair.approxVertexPos.rho $\leq$ precutRho}{
+          continue\;
+        }
+      }
+      \;
+      \For{%
+        v0Hyp $\in (K_S,\ \Lambda,\ \overline{\Lambda},\ \gamma)$
+      }{
+        \If%
+        (\tcp*[f]{cut not performed for $\gamma$})%
+        {trkPair.invMassRange $\cap$ v0Hyp.invMassRange $= \varnothing$ }
+        {
+          continue\;
+        }
+        \;
+        \Func%
+        (\tcp*[f]{entrypoint of V0Fitter})%
+        {V0Fitter::fitAndStore(trkPair, v0Hyp)}
+        {
+          vtx $\coloneq \text{Vertex}\left(0, 0, 0 \right)$\;
+          vertexFit(trkPair, v0Hyp, vtx) \tcp*{initial vertex fit}
+          \;
+          \If{fit failed or cut on fitted vertex parameters failed}{
+            return false\;
+          }
+          \If%
+          (\tcp*[f]{skip inner hit removal})%
+          {v0FitterMode $= 0$}
+          {
+            storeV0(trkPair, v0Hyp, vtx.pos)\;
+            return true\;
+          }
+          \;
+          (\trkPlus, \trkMinus) $\coloneq$ trkPair\;
+          \While{%
+            \trkPlus or \trkMinus has inner hits
+          }{
+            \If{\trkPlus has inner hits}{
+              \trkPlus $\coloneq$ removeInnerHitsAndRefit(\trkPlus, vtx.pos, v0Hyp.daughterPlus)\;
+            }
+            \If{\trkMinus has inner hits}{
+              \trkMinus $\coloneq$ removeInnerHitsAndRefit(\trkMinus, vtx.pos, v0Hyp.daughterMinus)\;
+            }
+            vertexFit((\trkPlus, \trkMinus), v0Hyp, vtx)\;
+            \If{%
+              fit failed or cut on vertex parameters failed
+            }{
+              break\;
+            }
+          }
+          \;
+
+          storeV0((\trkPlus, \trkMinus), v0Hyp, vtx.pos) \tcp*{use results of initial fit if removal failed}
+          return true\;
+        }
+      }
+    }
+  }
+\end{algorithm}

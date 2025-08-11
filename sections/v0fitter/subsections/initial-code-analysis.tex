@@ -1,0 +1,159 @@
+It is crucial that any modifications to the V0Fitter code do not alter the physical reconstruction results.
+It was therefore necessary to first gain a thorough understanding of the processing steps performed by the implementation of the V0Fitter that is currently used by basf2.
+This also entailed familiarizing myself with various components of the broader basf2 architecture.
+
+To begin, I explored the code's execution path starting from the module entry point V0FinderModule::event, using the IDE's symbol navigation features to trace method calls and variable usage (cf.\ Sec.\ \ref{sec:clangd}).
+During this process, I documented my findings in pseudocode%
+\footnote{\repoRef{project/blob/main/artifacts/code-analysis/newv0fitter-pseudocode}{project/artifacts/code-analysis/newv0fitter-pseudocode}}
+to improve my understanding of the algorithmic logic behind the individual routines and data structures.
+
+As a next step, I began profiling the code to identify computationally expensive sections that could be targets for optimization.
+Initially, I implemented a simple timer class (Lst.\ \ref{code:profiling-timer}), whose instances record the time \textemdash\ once during construction and again either upon calling a stop method or alternatively during destruction \textemdash\ and print the time elapsed between both measurements.
+This enabled the measurement of time spent executing a block of statements (using the explicit stop method) as well as the runtimes of specific functions (automatic destruction on scope exit).
+
+\begin{lstbox}{%
+    \captionof{customlst}{%
+      Simple timer class for profiling, a slightly modified version of basf2's Belle2::Utils::Timer \cite{b2timer-doxygen}
+    } \label{code:profiling-timer}
+  }
+  \import{listings/v0fitter/code/}{profiling-timer.tex}
+\end{lstbox}
+
+I then instrumented the basf2 code by attaching timers at multiple points throughout the V0Finder/Fitter processing flow.
+Running the instrumented build with a steering script that performs V0 reconstruction%
+\footnote{v0ValidationGenerateSample, see Sec.\ \ref{sec:v0fitter-testing-methodology} for details} 
+yielded a log file that included the timing information.
+
+To analyze the log output, I developed a small Python evaluation script%
+\footnote{\repoRef{project/blob/main/artifacts/profiling/main.ipynb}{project/artifacts/profiling/main.ipynb}}
+that iterates over the log lines in reverse, as timers in nested scopes print their results first, grouping the time measurements by event with subgroups for each timer location.
+For each event, the runtimes of a subgroup are then summed and divided by the measured execution time of V0FinderModule::event.
+This processing of the extracted log information is done using the Python libraries AwkwardArray \cite{awkwardarray}, NumPy \cite{numpy} and finally Pandas \cite{pandas} to average the values and provide further statistical information.
+The refined data (Tab.\ \ref{tab:profiling-initial}) provided an initial insight into the distribution of total execution time among the module's components.
+
+\begin{table}[h]
+  \import{tables/v0fitter/}{profiling-initial.tex}
+  \caption{Initial profiling results; method names are indented to reflect the call hierarchy}\label{tab:profiling-initial}
+\end{table}
+
+However, this custom profiling method lacked the accuracy of more advanced profiling tools and proved overall to be not that well suited for the task at hand.
+
+For instance, it introduced a non-negligible runtime overhead, reducing the reliability of the profiling results.
+This can be seen from the results of the module timing facility natively built into basf2: the per-event runtime average of the V0Finder with the custom timer instrumentation was significantly higher compared to that of the unmodified version ($\approx 114$ vs. $\approx 89$ \unit{\milli\second}/call) while the other modules exhibited similar runtimes.\footnote{%
+  Cf.\ runtime statistics at the bottom of log outputs for the instrumented build \repoRef{project/blob/main/artifacts/profiling/v0finder-validation.log}{project/artifacts/profiling/v0finder-validation.log} and unmodified build \repoRef{validation/blob/main/validation-newv0fitter-v0FitterMode1/9719fe1/results/current/tracking/v0ValidationGenerateSample.py.log}{validation/validation-newv0fitter-v0FitterMode1/9719fe1/results/current/tracking/v0ValidationGenerateSample.py.log}
+}
+This is likely attributable to frequent stream synchronization and flushing by the timers outputting their measured runtimes.
+
+Additionally, due to a misunderstanding, I performed this preliminary profiling on the NewV0Fitter, which is a version of the V0Fitter that already offers significant performance improvements over the original V0Fitter.
+Despite this, basf2 currently continues to use the initial V0Fitter, since validation indicated a minimal decrease in the NewV0Fitter's reconstructive performance compared to the V0Fitter.
+
+For the reasons stated above, it was necessary to repeat the profiling with more sophisticated tools both for the NewV0Fitter and especially the original V0Fitter.
+
+Therefore, following the recommendations of Prof. Kuhr and my thesis supervisors, I selected Callgrind as a more reliable and precise alternative.
+Callgrind \cite{callgrind-paper} is a profiling utility within the Valgrind \cite{valgrind-paper} tools suite.
+As the Valgrind manual \cite{valgrind-manpage} explains, tools within the framework such as Memcheck, Cachegrind and Callgrind instrument a program's machine code, which is then run on a synthetic CPU provided by the Valgrind core.
+During code execution, every program instruction is simulated, enabling Callgrind to capture comprehensive data on function call relationships and instruction counts per function call.
+
+A notable consequence of this fine-grained instrumentation however, is a significant execution slowdown of typically one order of magnitude.
+Callgrind reports results in instruction counts per call rather than wall-clock time, which however serves as an equally valid performance metric as instruction counts are correlated with execution times, especially for similar computational tasks.%
+\footnote{%
+  Assuming a consistent mix of instruction types, which implies a constant average number of CPU cycles per instruction (CPI), and a fixed CPU clock frequency throughout program execution, the formula $\text{CPU time} = \text{Instr.\ count} \times \text{CPI} \times \text{Clock cycle time}$ \cite{computer-architecture} indicates that execution time is directly proportional to the instruction count.
+}
+
+Basf2's {-}{-}profile <module> option leverages Callgrind functionality to instrument only a specific module%
+\footnote{Cf.\ macro CALL\_MODULE in basf2/framework/core/src/EventProcessor.cc},
+while maintaining near-native execution speed for the remaining codebase.
+Profiling was performed using this option to run a basf2 debug build on a unified script performing V0 reconstruction (cf.\ Sec.\ \ref{sec:v0fitter-testing-methodology}).
+After the profiled process exits, Callgrind outputs a text file containing detailed information about function calls and instruction counts ($\approx\qty{30}{\mega\byte}$ and $\approx \num{3e6}$ lines of text each).
+
+The gprof2dot \cite{gprof2dot} utility allows for visualization of the profiling data by converting the Callgrind outputs to call graphs in GraphViz/dot format \cite{graphviz}.
+\begin{samepage}
+
+  The resulting graphs provide valuable information:
+  \begin{itemize}[topsep=0pt]
+    \item The percentages in each function node represent the proportion of the total instruction count executed within that function including (excluding) nested calls (referred to as inclusive and exclusive cost in the following)
+    \item The nodes' color-coding indicates their inclusive cost
+    \item The edges connecting the function nodes show the distribution of inclusive self cost among the callees of a given function, as well as the total number of times a child function was called by its parent
+  \end{itemize}
+\end{samepage}
+
+
+\vspace{-0.5\baselineskip}
+\paragraph{Note:}
+Even with the default pruning settings of gprof2dot (node and edge inclusive cost thresholds of 0.5\% and 0.1\%, respectively), the generated call graphs remained very large \textemdash\ typically on the order of 300 nodes.
+To keep the figures in this thesis readable and focused, only smaller segments of the call graph are shown, highlighting relevant parts of the call structure.
+
+These segments were created by using custom pruning thresholds and manually limiting the graph depth.
+Graph depth can be limited with gprof2dot options that restrict the call graph either from a specific parent node downward or from a child node upward.
+To further improve clarity, unnecessary details were removed: template and type information were stripped using the gprof2dot \mbox{{-}{-}strip} option, and a custom script%
+\footnote{\repoRef{profiling/blob/main/dotfmt.py}{profiling/dotfmt.py}}
+was used to remove less important data such as the shared library name and the total number of calls per function.
+
+The complete call graphs generated with gprof2dot's default pruning settings, along with the raw profiling data obtained from Callgrind, are provided in a repository for reference.\footnote{Cf.\ graph.svg and callgrind.out files in \repoRef{profiling}{profiling}}
+
+
+I profiled the V0Finder twice using a unified profiling script%
+\footnote{For implementation details refer to section \ref{sec:v0fitter-testing-methodology}},
+once with the V0Fitter and once with the NewV0Fitter as fitting backend.
+The call graphs in Figure \ref{fig:profiling-existing} visualize the collected data and Table \ref{tab:profiling-existing} presents some additional metrics extracted from the profiling output files using Valgrind's callgrind\_annotate command.
+
+\begin{figure}[h]
+  \vspace{-20pt}
+  \centering
+  \begin{subfigure}{\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{static/profiling/profiling-v0fitter/050e500/pruned-graph.pdf}
+  \end{subfigure}
+
+  \vspace{-25pt}
+
+  {\color{gray}\rule{\linewidth}{0.5pt}}
+
+  \vspace{-15pt}
+
+  \begin{subfigure}{\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{static/profiling/profiling-newv0fitter/3ca6556/pruned-graph.pdf}
+  \end{subfigure}
+
+  \vspace{-20pt}
+
+  \caption{
+    Call graph segments starting from the fitAndStore class entry point, annotated with profiling data. \emph{Top:} V0Fitter, \emph{Bottom:} NewV0Fitter. Generated using gprof2dot and GraphViz.
+  }\label{fig:profiling-existing}
+\end{figure}
+
+\begin{table}[h]
+  \centering
+  \import{tables/v0fitter/}{profiling-existing.tex}
+  \caption*{
+    \textbf{I\%/Call}: Inclusive cost percentage per function call, i.e.\ $\frac{\text{Instr.}}{(\text{Total Instr. Count}) \times \text{Calls}} \times 100$
+  }
+  \caption{%
+    Profiling data for selected function calls, ordered by cost per call
+  }\label{tab:profiling-existing}
+\end{table}
+
+\begin{figure}[h]
+  \begin{minipage}[t]{0.5\textwidth}%
+    \vspace{0pt}
+    \includegraphics[width=\linewidth]{static/profiling/profiling-v0fitter/050e500/v0finder-call-graph.pdf}
+    \captionsetup{justification=raggedright,singlelinecheck=false}
+    \captionof{figure}{\emph{Top:} Call structure and cost distribution for the V0Finder (from V0Fitter profiling; similar for NewV0Fitter)} \label{fig:v0finder-callgraph}
+    \captionof{figure}{\emph{Right:} Call graph segment showing RAVE vertex fitting function invocation structure and cost distribution (from V0Fitter profiling; RAVE call structure is independent of V0Fitter implementation)} \label{fig:rave-callgraph}
+  \end{minipage}%
+  \hspace{-15pt}
+  \begin{minipage}[t]{0.5\textwidth}%
+    \vspace{0pt}
+    \includegraphics[width=1.15\linewidth]{static/profiling/profiling-v0fitter/050e500/pruned-rave-graph.pdf}
+  \end{minipage}
+\end{figure}
+
+The refined data provides several valuable insights into the module's performance characteristics:
+\begin{itemize}
+  \item Runtime overhead is almost entirely concentrated in the fitter modules, the cost incurred by computations in the V0Finder itself is negligible (Fig.\ \ref{fig:v0finder-callgraph})
+  \item Track and vertex fitting procedures have the highest computational cost per call (Tab.\ \ref{tab:profiling-existing})
+  \item The performance improvement of the NewV0Fitter over the V0Fitter can be primarily attributed to a significant reduction in track fitting operations, extrapolation of track parameters to the vertex and RecoTrack copying (Fig.\ \ref{fig:profiling-existing}, Tab.\ \ref{tab:profiling-existing}). For the underlying reasons for these savings cf.\ Section \ref{sec:v0fitter-refactoring}
+  \item The parts of the call graph corresponding to the RAVE vertex fitting process (Fig.\ \ref{fig:rave-callgraph}) show that computational load is broadly distributed across many different functions. The initial profiling data for the NewV0Fitter (Tab.\ \ref{tab:profiling-initial}) had indicated that this was a costly operation, making it a candidate for optimization, however navigating the complex call hierarchy of the RAVE code proved to be challenging. As the more thorough results of Callgrind profiling indicate, no single function within the vertex fitting process emerges as a clear bottleneck or an obvious target for optimization
+  \item The profiling data also highlights a significant overhead from genfit::Track construction (Fig.\ \ref{fig:profiling-existing}, Tab.\ \ref{tab:profiling-existing}), particularly its copy constructor as evident in the unstripped call graph\footnote{See for example \repoRef{profiling/blob/main/profiling-v0fitter/050e500/graph.svg}{profiling/profiling-v0fitter/050e500/graph.svg}}
+\end{itemize}

@@ -1,0 +1,147 @@
+\documentclass{article}
+\usepackage[a4paper, margin=2cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\RequirePackage[]{siunitx}[2025-07-09]
+\usepackage{siunitx}[2025-07-09]
+\usepackage{mathtools}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{todonotes}
+\usepackage{import}
+\usepackage{array}
+\usepackage{xspace}
+\usepackage[normalem]{ulem}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage{float}
+\usepackage{tikz}
+\usepackage{minted}
+\setminted{breaklines=true, breakanywhere=true}
+\usepackage{markdown}
+\usepackage{adjustbox}
+\usepackage[labelfont=bf]{caption}
+\usepackage[hang,flushmargin,stable,bottom]{footmisc}
+
+
+\renewcommand{\footnotelayout}{\raggedright}
+
+\newcommand{\hiddenbr}{\discretionary{}{}{}}
+
+\usepackage[table]{xcolor}
+\usepackage{algorithm2e}
+%Credit: https://tex.stackexchange.com/a/735431/406960
+\makeatletter
+\renewcommand{\algocf@Vline}[1]{%     no vskip in between boxes but a strut to separate them, 
+  \strut\par\nointerlineskip% then interblock space stay the same whatever is inside it
+  \algocf@push{\skiprule}%        move to the right before the vertical rule
+  \hbox{\textcolor{gray!30}{\vrule}%
+    \vtop{\algocf@push{\skiptext}%move the right after the rule
+      \vtop{\algocf@addskiptotal #1}\Hlne}}\vskip\skiphlne% inside the block
+  \algocf@pop{\skiprule}%\algocf@subskiptotal% restore indentation
+  \nointerlineskip}% no vskip after
+  
+\renewcommand{\algocf@Hlne}{\color{gray!30}\hrule height 0.4pt depth 0pt width .5em}%
+  
+\makeatother
+
+\setlength{\algomargin}{0pt}
+
+
+
+\setlength{\footnotesep}{\baselineskip}
+\setlength{\parindent}{0cm}
+
+\newcommand\fix[1]{\textcolor{red}{#1}}
+\providecommand{\note}[1]{}
+\renewcommand{\note}[1]{}
+
+\usepackage[style=numeric, sorting=none, backend=bibtex]{biblatex}
+\DeclareFieldFormat{version}{%
+  Version:~#1%
+}
+\setlength\bibitemsep{0pt plus 0.3ex}
+\renewcommand*{\bibfont}{\small\raggedright}
+
+\usepackage{xurl}
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  allcolors=black
+}
+
+\let\oldhref\href
+\renewcommand{\href}[2]{\oldhref{#1}{\uline{#2}}}
+
+\newcommand{\gitBaseUrl}{https://gitlab.physik.uni-muenchen.de/Philip.Obi/}
+\newcommand{\repoRef}[2]{\href{\gitBaseUrl\detokenize{#1}}{gitlab/Philip.Obi/\detokenize{#2}}}
+
+\DeclareCaptionType[name=Algorithm]{customalg}
+\captionsetup[customalg]{
+  aboveskip=0pt, 
+  belowskip=0pt,
+  justification=raggedright,
+  singlelinecheck=false
+}
+
+\DeclareCaptionType[name=Listing]{customlst}
+\captionsetup[customlst]{
+  aboveskip=0pt, 
+  belowskip=0pt,
+  justification=raggedright,
+  singlelinecheck=false
+}
+
+\usepackage{tcolorbox}
+\tcbuselibrary{most}
+\newtcolorbox{algbox}[2][]{
+  sharp corners,  
+  boxrule=0.4pt,
+  float,
+  floatplacement=htbp,
+  coltitle=black,
+  colbacktitle=white,
+  colback=white,
+  colframe=black,
+  left=1mm,
+  right=-2mm,
+  bottom=0mm,
+  title={#2},
+  #1
+}
+\newtcolorbox{lstbox}[1]{
+  sharp corners,  
+  boxrule=0.4pt,
+  float,
+  floatplacement=htbp,
+  coltitle=black,
+  colbacktitle=white,
+  colback=white,
+  colframe=black,
+  title={#1}
+}
+
+\setlist[itemize]{
+  left=0pt, 
+  itemsep=0.2em
+}
+\setlist[enumerate]{
+  left=0pt, 
+  itemsep=0.2em,
+  label=\textbf{\arabic*.}
+}
+
+\DeclareSIUnit\barn{b}
+
+\usepackage{csquotes}
+
+\interfootnotelinepenalty=10000%
+
+\addbibresource{main.bib}
+\begin{document}
+\subimport{sections/}{document.tex}
+\end{document}

@@ -1,0 +1,20 @@
+\begin{minted}[breaklines]{diff}
+   unsigned int count_removeInnerHits = 0;
+   while (hasInnerHitStatus != 0) {
+-    ++count_removeInnerHits;
++    /// if the number of trials exceeds the number of hits, terminate the loop.
++    if (count_removeInnerHits > (recoTrackPlus->getRecoHitInformations().size() + recoTrackMinus->getRecoHitInformations().size())) {
++      failflag = true;
++      B2WARNING("V0Fitter: too many trials of removing inner hits.");
++      break;
++    }
++    count_removeInnerHits++;
+...
+-    if (count_removeInnerHits >= 5) {
+-      B2WARNING("Inner hits remained after " << count_removeInnerHits << " times of removing inner hits!");
+-      failflag = true;
+-      break;
+-    }
+...
+   }/// end of the while loop
+\end{minted}

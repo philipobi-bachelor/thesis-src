@@ -1,0 +1,23 @@
+\import{tables/}{tab-styling.tex}
+
+\def\vf{V0Fitter}
+\def\vfr{V0Fitter Refactor}
+\def\nvf{NewV0Fitter}
+
+\renewcommand{\arraystretch}{1.2}
+\centering
+\begin{tabular}{| l | c | I{4} | I{4} | I{4} | D{3}{2} >{\hspace{-1.0em}}c<{\hspace{-1.0em}} D{3}{2} | c |}
+    \hline
+    \multicolumn{2}{|c|}{\multirow[b]{3}{*}{Impl. / v0FitterMode}} & \multicolumn{3}{c|}{Stored V0s}                                        & \multicolumn{3}{c|}{\multirow[b]{3}{*}{Time $\left[\si{\milli\second}\right]$ / call}} & \multirow[b]{3}{*}{Commit} \\ \cline{3-5}
+    \multicolumn{2}{|c|}{}                                         & {\multirow[b]{2}{*}{Total}} & \multicolumn{2}{c|}{With inner hits}     & \multicolumn{3}{c|}{}                                                                  &                            \\
+    \multicolumn{2}{|c|}{}                                         &                             & \multicolumn{1}{c}{Detected} & {Removed} & \multicolumn{3}{c|}{}                                                                  &                            \\ \hline
+    \vf  & \multirow{3}{*}{0}                                      & 5849                        & 0                            & 0         & 82.31  & $\pm$ & 62.50                                                                 & 66d35ef                    \\
+    \nvf &                                                         & 5848                        & 0                            & 0         & 78.16  & $\pm$ & 58.96                                                                 & 05c5b32                    \\
+    \vfr &                                                         & 5873                        & 0                            & 0         & 42.38  & $\pm$ & 34.58                                                                 & 6e2dcd6                    \\ \hline
+    \vf  & \multirow{3}{*}{1}                                      & 5895                        & 1364                         & 1002      & 165.11 & $\pm$ & 157.20                                                                & e23d80d                    \\
+    \nvf &                                                         & 5846                        & 1662                         & 1317      & 89.10  & $\pm$ & 71.48                                                                 & 9719fe1                    \\
+    \vfr &                                                         & 5878                        & 1352                         & 1010      & 70.77  & $\pm$ & 74.86                                                                 & 1492106                    \\ \hline
+    \vf  & \multirow{3}{*}{2}                                      & 5896                        & 1365                         & 997       & 163.11 & $\pm$ & 154.88                                                                & 54bcd16                    \\
+    \nvf &                                                         & 5849                        & 1669                         & 1317      & 88.86  & $\pm$ & 71.48                                                                 & 8b68401                    \\
+    \vfr &                                                         & 5879                        & 1355                         & 979       & 71.42  & $\pm$ & 75.90                                                                 & cd1f30d                    \\ \hline
+\end{tabular}

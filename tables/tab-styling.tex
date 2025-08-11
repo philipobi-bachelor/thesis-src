@@ -1,0 +1,15 @@
+\sisetup{
+    tight-spacing=true,
+    table-number-alignment=center,
+    table-text-alignment=center,
+}
+
+\newcolumntype{I}[1]{S[table-format=#1.0]}
+\newcolumntype{D}[2]{S[table-format=#1.#2]}
+
+\providecommand*\n[1][1ex]{}
+\providecommand*\y[1][1ex]{}
+\renewcommand*\n[1][1ex]{\adjustbox{valign=c}{\tikz\draw (0,0) circle (#1);}}
+\renewcommand*\y[1][1ex]{\adjustbox{valign=c}{\tikz\fill (0,0) circle (#1);}}
+
+\renewcommand{\arraystretch}{1.2}

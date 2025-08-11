@@ -1,0 +1,14 @@
+\begin{minted}{cpp}
+namespace Belle2::NewV0Fitter {
+class Track {
+public:
+  Track(const bool isTrackPlus, const Belle2::Track* track,
+        const Const::ChargedStable& particleHyp);
+  bool checkInnerHits(const ROOT::Math::XYZVector& vertexPos);
+  bool removeInnerHitsAndRefit(const ROOT::Math::XYZVector& vertexPos);
+private:
+  const Belle2::Track* m_track;
+  static const Config* s_config;
+};
+}
+\end{minted}  

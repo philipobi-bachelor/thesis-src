@@ -1,0 +1,37 @@
+\begin{minted}{cpp}
+namespace Belle2::NewV0Fitter {
+class Fitter {
+public:
+  Fitter(const Config& config);
+  bool fitAndStore(const Belle2::Track* trackPlus,
+                   const Belle2::Track* trackMinus,
+                   const Const::ParticleType& v0Hypothesis, bool& isForceStored,
+                   bool& isHitRemoved);
+private:
+  bool fitVertexAndPrecut(V0& v0, Track& trackPlus, Track& trackMinus);
+  const Config m_config;
+};
+}
+\end{minted}
+\tcblower%
+\begin{minted}{cpp}
+namespace Belle2::NewV0Fitter {
+bool Fitter::fitAndStore(const Belle2::Track* trackPlus_,
+                         const Belle2::Track* trackMinus_,
+                         const Const::ParticleType& v0Hypothesis,
+                         bool& isForceStored, bool& isHitRemoved) {
+  V0 v0 = V0::create(v0Hypothesis);
+  const auto& [particleHypPlus, particleHypMinus] = v0.getDaughterParticles();
+  Track trackPlus(true, trackPlus_, particleHypPlus);
+  Track trackMinus(false, trackMinus_, particleHypMinus);
+
+  // precut and perform initial vertex fit
+  bool status = fitVertexAndPrecut(v0, trackPlus, trackMinus); 
+  if (!status) return false;
+  bool passInvMassCut = v0.invMassCut();
+
+  // check for inner hits, hit removal, etc.
+  // ...
+}
+}    
+\end{minted}

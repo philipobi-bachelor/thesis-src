@@ -1,0 +1,26 @@
+\definecolor{cm1}{HTML}{B1D9A3}
+\definecolor{cm2}{HTML}{CBE8BE}
+\definecolor{cm3}{HTML}{E4F2D5}
+\definecolor{cm4}{HTML}{FCF6E1}
+\definecolor{cm5}{HTML}{FFCCCB}
+\definecolor{cm6}{HTML}{FCBABA}
+
+\let\cc\cellcolor
+
+\providecommand*\ec[1][1ex]{}
+\providecommand*\hc[1][1ex]{}
+\providecommand*\fc[1][1ex]{}
+
+\renewcommand*\ec[1][1ex]{\adjustbox{valign=c}{\tikz\draw (0,0) circle (#1);}}
+\renewcommand*\hc[1][1ex]{%
+  \adjustbox{valign=c}{\begin{tikzpicture}
+      \draw[fill] (0,0)-- (90:#1) arc (90:270:#1) -- cycle ;
+      \draw (0,0) circle (#1);
+    \end{tikzpicture}}}
+\renewcommand*\fc[1][1ex]{\adjustbox{valign=c}{\tikz\fill (0,0) circle (#1);}}
+
+\def\header{\multicolumn{2}{l|}{\textbf{Task Number / Description}} &\multicolumn{1}{c}{\textbf{bl}} & \multicolumn{1}{c|}{\textbf{s/bl}} & \multicolumn{1}{c|}{\textbf{s?}} & \multicolumn{2}{c|}{\textbf{c-s-4}} & \multicolumn{2}{c|}{\textbf{g-2.5-p}} & \multicolumn{2}{c|}{\textbf{gpt-4o}} & \multicolumn{2}{c}{\textbf{o4-mini}}\\\hline}
+
+\newcolumntype{M}{r l | r r | c | c r | c r | c r | c r}
+
+\renewcommand{\arraystretch}{1.1}

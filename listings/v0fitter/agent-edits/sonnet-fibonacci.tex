@@ -1,0 +1,29 @@
+\begin{minted}{diff}
+ namespace task50 {
++// Optimization: Memoized fibonacci to avoid exponential time complexity
+ unsigned long long fibonacci(unsigned int n) {
+-  if (n <= 1)
+-    return n;
+-  return fibonacci(n - 1) + fibonacci(n - 2);
++  static std::vector<unsigned long long> memo(41, 0);
++  static bool initialized = false;
++  if (!initialized) {
++    memo[0] = 0;
++    memo[1] = 1;
++    for (int i = 2; i <= 40; ++i) {
++      memo[i] = memo[i-1] + memo[i-2];
++    }
++    initialized = true;
++  }
++  return memo[n];
+ }
+ } // namespace task50
+...
+// Task 50
+   {
+     using namespace task50;
+     unsigned int n = 40;
+     unsigned long long result = fibonacci(n);
+     std::cout << "Fibonacci(" << n << ") = " << result << std::endl;
+   }
+\end{minted}

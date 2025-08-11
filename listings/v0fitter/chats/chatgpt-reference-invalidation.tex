@@ -1,0 +1,14 @@
+\textbf{Prompt:} c++ is a reference to a object member invalidated when the member changes?
+\tcblower
+\textbf{ChatGPT} (o4-mini):\par
+\begin{markdown}
+In C++ a reference, once bound, always refers to the very same object (or sub-object) for its entire lifetime. Simply mutating that object (or its member) does **not** “invalidate” the reference. What *can* invalidate a reference (or pointer) is:
+
+1. **End of lifetime**\
+   If the object (or its containing sub‐object) is destroyed, any references to it become dangling.
+
+2. **Relocation**\
+   If the object's storage is moved in memory (for example, elements of a `std::vector` being reallocated when you insert past its capacity), then references (and pointers or iterators) to those elements no longer point to the original storage and are therefore invalid.
+
+...
+\end{markdown}

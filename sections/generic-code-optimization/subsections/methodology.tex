@@ -1,0 +1,83 @@
+\paragraph{Input Data}
+As a first step, I produced a set of such examples by prompting LLMs to generate code with typical C++ performance mistakes.
+Initially, I requested Gemini 2.5 Pro to produce 100 examples:
+For each example I required a standalone C++ code snippet%
+\footnote{I.e.\ complete with includes and main function}
+containing an inefficient operation, a corresponding optimized version performing the same task, a brief title and a description of the inefficiency.
+
+However, initial evaluation revealed quality issues in many examples.
+While the concepts were generally sound, code snippets often lacked proper implementation.
+For example, function bodies were frequently left empty or contained only trivial operations with no side effects, preventing the intended inefficiencies from actually affecting the execution performance (see Lst.\ \ref{lst:examplegen-gemini-bad-quality}).
+Additionally, several examples were nearly identical.
+
+To address these issues, I refined the prompt to require each example to output a result value, ensuring observable side effects.
+I also reduced the number of requested examples to 50 and explicitly required distinctness.
+This revised prompt was submitted to Claude Sonnet 3.7 Thinking and produced higher quality examples overall, though some similarities between individual examples remained.
+
+I manually curated the final dataset by replacing several examples from the second iteration with high-quality ones from the initial set.
+The result was a Markdown file containing 50 numbered examples, each with inefficient and optimized code blocks, a title and a description.%
+\footnote{\repoRef{code-optimization-test/blob/main/examples.md}{code-optimization-test/examples.md}}
+I then programmatically extracted these examples using regular expressions%
+\footnote{
+  \textbf{Note:} for working with regular expressions (regex) \cite{regex-spec}, I found the website Regex101 \cite{regex101} invaluable. Key features include:\\%
+  - Interactive regex editing with real-time syntax highlighting, pattern explanations, and match visualization\\%
+  - Quick reference materials\\%
+  - Code generation for regex processing in multiple programming languages\\%
+  - Regex debugging functionality
+}
+in Python, and stored them in a database.
+
+\paragraph{Test File Generation}
+To create realistic test conditions, I generated two complementary test files for each example using Python.
+By sampling a Bernoulli random variable with parameter 0.5 and a predetermined random seed, I randomly assigned implementations to files.
+A value of 1 placed the efficient version in the first test file and the inefficient version in the second.
+
+This approach produced two test files, each containing 50 tasks with mixed efficient and inefficient code.
+I employed this methodology because it better reflects real-world scenarios, where codebases typically contain a mixture of efficient and inefficient implementations rather than being uniformly optimized or unoptimized.
+
+\paragraph{Evaluation Process}
+I evaluated GitHub Copilot's performance across the different underlying models using the prepared test files.
+For each model and test file combination, I tasked Copilot with improving the code.
+The instruction prompt, generated using Claude 3.7 Sonnet Thinking, avoided revealing the deliberate test nature.
+Instead, it presented each file as \enquote{a C++ file that performs various computational tasks}.
+The instructions required that any modifications (1) leave functionality unchanged, and (2) provide significant performance improvements to prevent superficial changes without meaningful benefits.
+
+After each agent completed its optimization task, I archived the conversations and file modifications using my chat archiving utility, and reset the test files to their original unmodified state.
+From the file edit information in the exported chat logs, I extracted the modified code implementation of each task, and conducted a manual high-level review comparing each example's post-optimization code against its original version.
+
+This evaluation process allowed me to assess how many inefficient examples Copilot successfully identified and attempted to optimize, as well as whether Copilot made additional improvements to examples that were already efficiently implemented.
+
+\paragraph{Benchmarking}
+To complement the qualitative analysis, I performed comprehensive benchmarking of all code variants, measuring the performance of original efficient versions, original inefficient versions, and Copilot-modified versions.
+This approach quantified performance differences between the reference versions and measured Copilot's optimization impact.
+The process also verified that examples compiled successfully and executed without errors.
+
+For consistency and reproducibility, all benchmarking was conducted in a containerized environment, using a custom image that links code with the nanobench library \cite{nanobench} during compilation and then executes the binary.
+Benchmarking is automated through a Python script that instruments code snippets with nanobench facilities and launches the container, transmitting instrumented code via standard input.
+Results and error messages are captured from the container's standard error stream\footnote{%
+  As the standard output is mostly cluttered with example code output
+}
+and processed by the script.
+
+All benchmarking data is stored in a dedicated database for analysis and documentation purposes.
+
+\paragraph{Note:}
+Detailed documentation for this test is available in a dedicated repository.%
+\footnote{\repoRef{code-optimization-test}{code-optimization-test}}
+This includes the Python scripts used for data extraction, benchmarking and evaluation, as well as the build specification for the benchmarking container image.
+The repository also contains the metaprompts used to generate the examples and agent instructions, and complete chat logs with exact prompts, model responses and code edits.
+
+The extracted examples and benchmark data are preserved in a separate repository containing backups of the central database used throughout this thesis.%
+\footnote{\repoRef{project-db-dump}{project-db-dump}}
+This database also stores the raw JSON data from every chat log archived during the research process.
+
+\begin{lstbox}{%
+    \captionof{customlst}{
+      Example generated by Gemini 2.5 Pro illustrating the issue of missing function implementations
+      \footnotemark
+    }
+    \label{lst:examplegen-gemini-bad-quality}
+  }
+  \import{listings/v0fitter/chats/}{examplegen-gemini-bad-quality.tex}
+\end{lstbox}%
+\footnotetext{\repoRef{code-optimization-test/blob/main/chat-logs/generated-examples-1.md}{code-optimization-test/chat-logs/generated-examples-1.md}}

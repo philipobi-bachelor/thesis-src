@@ -1,0 +1,176 @@
+Based on the insights gained from profiling and considering that the original V0Fitter remains the fitter implementation currently used by the V0Finder, I was able to more clearly define an objective: refactoring the V0Fitter code while exploring potential applications of AI throughout the process.
+Specifically, the goal was to modularize the code, reducing monolithic structures and eliminating redundancy as well as improving the performance while preserving the overall logic and reconstruction accuracy of the original implementation.
+
+I started by analyzing the V0Fitter source code and documented my findings using pseudocode as I had previously done for the NewV0Fitter%
+\footnote{%
+  \repoRef{project/blob/main/artifacts/code-analysis/v0fitter-pseudocode}{project/artifacts/code-analysis/v0fitter-pseudocode}
+}.
+Then, with a solid understanding of both fitter implementations, I was ready to begin the actual refactoring.
+To aid in the redesign, I prompted several LLMs for conceptual strategies on how to refactor the code, particularly regarding the decomposition of the V0Fitter's tasks and data structures into more cohesive, self-contained components (cf.\ section \ref{sec:refactoring-advice}).
+Once I had established a preliminary architectural outline for the refactored version, incorporating some of the AI's suggestions, I proceeded with the implementation.
+
+\subsubsection{Short background Information and Class Explanations}
+The following gives a short overview of important classes in the context of V0 fitting, summarizing information from the respective class documentations %
+\cite{recotrack-doxygen}%
+\cite{b2track-doxygen}%
+\cite{recogfaccess-doxygen}%
+\cite{b2v0-doxygen}%
+:
+
+\paragraph{Belle2::RecoTrack}
+\begin{itemize}[topsep=0pt]
+  \item Provides an interface to access fitted track parameters and hit information associated with the track
+  \item Fitting of RecoTracks is performed using the TrackFitter class
+  \item Instances exist only during the reconstruction stage, afterwards, only the more lightweight Belle2::Track objects remain containing references to fit results of the track for multiple particle hypotheses
+  \item Useful wrapper around a genfit::Track
+\end{itemize}
+
+\paragraph{genfit::Track}
+\begin{itemize}[topsep=0pt]
+  \item Described in documentation as \enquote{the most holy part of the RecoTrack}
+  \item Represents a track within the GenFit fitting library, contains all relevant track fitting information such as fitted track parameters and their covariances
+  \item Usually holds multiple track representations, corresponding to different particle hypotheses, which can be fitted in parallel
+  \item Essentially, when fitting a RecoTrack, the TrackFitter adds the hits selected for the fit (as represented by their useInFit property) to the genfit::Track%
+  \footnote{%
+    Cf.\ TrackFitter::fit and its invocation of MeasurementAdder::addMeasurements \cite{trackfitter-fit-doxygen}
+  }
+  and then invokes a GenFit method to perform the actual track fitting
+\end{itemize}
+
+\paragraph{Belle2::V0}
+\begin{itemize}[topsep=0pt]
+  \item Stored to the DataStore for use in the analysis stage, encapsulates information about a reconstructed V0 candidate:
+  \item[--] Pointers to the pair of Belle2::Tracks used for reconstructing the V0
+  \item[--] Pointers to the fit results of the specific track representations that correspond to the V0 daughter particle hypotheses
+  \item[--] Fitted vertex position
+\end{itemize}
+
+\subsubsection{Overview of Performed Optimizations}
+
+Throughout the refactoring process, I compared the steps both existing fitter versions took to perform a specific task, trying to identify opportunities to remove unnecessary operations or implement more efficient solutions without altering the underlying logic.
+
+This allowed me to identify several key areas for optimization in the code and implement the logic more efficiently in the refactored version:
+
+
+\paragraph{RecoTrack Copying}
+For each hit removal iteration, both the V0Fitter and the NewV0Fitter use a similar procedure to attempt the removal of detected inner hits in the positive and negative RecoTrack.
+A simplified overview of this process is presented in Algorithm \ref{alg:hitremoval} for the V0Fitter, with the NewV0Fitter employing a largely similar method.
+
+\begin{algbox}{%
+    \captionof{customalg}{Pseudocode for hit removal procedure in the V0Fitter}%
+    \label{alg:hitremoval}%
+  }
+  \import{listings/v0fitter/algorithms/}{hitremoval.tex}
+\end{algbox}
+
+In addition to copying all associated hit information, copying a RecoTrack also involves creating a new genfit::Track instance within the copied RecoTrack.
+To optimize this procedure while keeping the original RecoTrack unmodified, the refactored version creates a copy exactly once, before the first hit removal attempt and reuses this copy for all subsequent iterations.
+
+
+\paragraph{genfit::Track Copying}
+To perform the vertex fit, pointers to the genfit::Track objects of the RecoTrack pair must be passed to the vertex fitting interface.
+To prevent modification, both existing implementations copy-construct the genfit::Tracks before the fit.
+This frequent copy-construction explains the significant number of instructions spent in the genfit::Track constructor that were observed during profiling (Tab.\ \ref{tab:profiling-existing}).
+
+After reviewing the GenFit-RAVE interface code, I concluded with high confidence that the vertex fitting procedure does not modify the genfit::Tracks:
+
+First of all, the genfit::Tracks are converted to rave::Tracks before being passed to the RAVE vertex fitter, a process during which all necessary data is copied.\footnote{
+  Cf.\ GenFit source code in basf2 for \href{https://github.com/belle2/basf2/blob/release-09-00-00/genfit2/code2/GFRave/include/GFRaveVertexFactory.h}{GFRaveVertexFactory::findVertices} and its nested invocations of \href{https://github.com/belle2/basf2/blob/release-09-00-00/genfit2/code2/GFRave/src/GFRaveConverters.cc}{genfit::GFTrackToTrack}
+}
+Secondly, the only track state that is modified during this process is a copy of the original object, as explained in the inline comment of the relevant source code line.\footnote{%
+  See the GenFit source code in basf2: \href{https://github.com/belle2/basf2/blob/release-09-00-00/genfit2/code2/GFRave/src/GFRaveConverters.cc\#L68}{basf2/genfit2/code2/GFRave/src/GFRaveConverters.cc:68}
+}
+
+Therefore, the only modification made to the genfit::Track during vertex fitting is the setting of its cardinal representation, which allows to select one of the multiple track representations in the genfit::Track as main version.
+Only the cardinal representation is passed to RAVE for vertex fitting, therefore it needs to be set to that of the daughter particle hypothesis to obtain accurate physical results.
+
+To address this concern in the refactored version while avoiding copying, I implemented functionality to restore the cardinal representation of the original RecoTrack's genfit::Track to its initial state as soon as the object is no longer needed by the fitter.%
+\footnote{
+  Handled by the destructor of a wrapper class; this is briefly touched upon in Lst.\ \ref{lst:docgen-o4-mini}, (2), for details see the source code implementation
+}
+This optimization eliminates the need to create copies of genfit::Tracks altogether, especially for the initial vertex fit.
+The initial vertex fit is the most frequently performed fitting procedure, since for most calls to fitAndStore, it either fails or no inner hits are detected.
+
+Although each individual copy operation is not exceedingly expensive, eliminating them entirely saves a sizeable amount of instructions (Tab.\ \ref{tab:profiling-all}).
+
+\paragraph{Track Fitting for Unpromising Hypotheses}
+As track refitting is the most costly operation per call in terms of instructions, reducing unnecessary calls to TrackFitter::fit presents the most significant opportunity for optimization.
+
+This is also the primary area where the NewV0Fitter achieves its performance advantage over the V0Fitter as evident from the profiling data (Tab.\ \ref{fig:profiling-existing}).
+It accomplishes this by enforcing the invariant mass cut after a vertex fit, regardless of whether an inner hit was detected (see Par.\ \hyperref[par:vertex-cuts]{\emph{Vertex fit and cuts}} in Sec.\ \ref{sec:v0fitter-alg-notes} for details on the performed cut).
+
+The V0Fitter, in contrast, only applies this cut if no inner hits are found, or if it is configured to ignore inner hits.
+This allows many candidates with invariant masses far outside the allowed range for the hypothesis to enter the iterative hit removal and refitting process, only for the invariant mass cut to fail once inner hits have been removed, resulting in numerous wasteful track refitting calls.
+
+In the refactored version, I adopted the strategy of consistently enforcing the invariant mass cut after the initial vertex fit, while adding a tolerance to the allowed range if inner hits were detected.
+
+\paragraph{V0 Object Stashing}
+In the V0Fitter, if an initial vertex fit is successful but inner hits are present and hit removal is enabled, the vertex fit results are discarded and the hit removal process begins.
+If the subsequent hit removal fails, the initial vertex fit is repeated with the original RecoTracks and the V0 object is stored regardless of inner hits.
+
+To avoid the redundant vertex fit in such cases, I established functionality to construct and temporarily stash the Belle2::V0 object after the initial vertex fit, allowing it to be retrieved and immediately stored should the hit removal process not be successful.
+The NewV0Fitter implements a similar feature, but with the key difference that it stores the result of the last successful vertex fit, which may not be the initial one.
+
+
+\subsubsection{Overview of Refactored Code Architecture}
+\paragraph{Note:} The refactored code overwrites the previous NewV0Fitter implementation in NewV0Fitter.h/.cc \footnote{%
+  Located at basf2/tracking/v0Finding/fitter/\{include/NewV0Fitter.h, src/NewV0Fitter.cc\}
+}
+to simplify integration and avoid changes to existing infrastructure like build scripts and configuration options (such as the V0Finder boolean configuration option useNewV0Fitter). This can be easily changed by renaming the relevant files and the NewV0Fitter namespace, where the refactored implementation is defined, should my implementation be merged into the official basf2 branch.
+
+\vspace{\baselineskip}
+The refactored V0Fitter code replaces the previously monolithic Fitter class with several distinct components organized within the NewV0Fitter namespace. The following section provides a brief overview of the most relevant classes and members. For further implementation details, see the source code of the refactored V0Fitter.%
+\footnote{%
+  The refactored implementation is available in the corresponding files on the v0fitter-refactor branch of the forked basf2 repository
+  \repoRef{basf2/tree/v0fitter-refactor}{basf2:v0fitter-refactor}:\\
+  \repoRef{basf2/blob/v0fitter-refactor/tracking/v0Finding/fitter/include/NewV0Fitter.h}{basf2:v0fitter-refactor/tracking/v0Finding/fitter/include/NewV0Fitter.h} and\\
+  \repoRef{basf2/blob/v0fitter-refactor/tracking/v0Finding/fitter/src/NewV0Fitter.cc}{basf2:v0fitter-refactor/tracking/v0Finding/fitter/src/NewV0Fitter.cc}
+}
+
+\paragraph{NewV0Fitter::Fitter}
+This is the main class orchestrating the fitting process, providing the fitAndStore method that serves as the primary interface to the V0Finder, consistent with the two previous fitter implementations (Lst.\ \ref{code:refactor-fitter}).
+
+\paragraph{NewV0Fitter::V0}
+Instances of this class are created upon entry into fitAndStore, requiring the V0 hypothesis of the current fitting operation as argument (Lst.\ \ref{code:refactor-fitter}).
+The class encapsulates hypothesis-specific logic, such as applying the invariant mass cut, and managing the construction, stashing and storage of Belle2::V0 objects (Lst.\ \ref{code:refactor-v0}).
+It also provides intermediate storage for data relevant to V0 reconstruction, such as the daughter particle types for a given hypothesis, the vertex fit results, and stashed Belle2::V0 objects.
+
+\paragraph{NewV0Fitter::Track}
+Two NewV0Fitter::Track objects are constructed at the start of the fitAndStore function, corresponding to both the positive and negative Belle2::Track passed by the V0Finder (Lst.\ \ref{code:refactor-fitter}).
+The class provides methods to check for inner hits and attempt their removal, while managing the copying of underlying RecoTracks to ensure the original objects are never modified (Lst.\ \ref{code:refactor-track}).
+
+\paragraph{NewV0Fitter::Config}
+This struct holds all fitter configuration options as const members, such as the invariant mass ranges for the specific V0 hypotheses, fitter mode, and DataStore array names (Lst.\ \ref{code:refactor-config}).
+An instance is created and configured by the V0Finder during initialization and passed to the fitter's constructor which assumes ownership of the object.
+Static constant pointers to the Config instance are provided to certain other components of the namespace.
+
+This for example allows the NewV0Fitter::V0 to look up the invariant mass range for a certain v0Hypothesis, and enables the NewV0Fitter::Track to get the name of the StoreArray containing the RecoTracks, and subsequently retrieve the RecoTrack corresponding to the Belle2::Track passed by the V0Finder.
+
+
+\begin{lstbox}{%
+    \captionof{customlst}{Relevant members of the Fitter class in the refactored V0Fitter implementation}
+    \label{code:refactor-fitter}
+  }
+  \import{listings/v0fitter/refactor/}{fitter.tex}
+\end{lstbox}
+
+\begin{lstbox}{%
+    \captionof{customlst}{Relevant members of the V0 class in the refactored V0Fitter implementation}
+    \label{code:refactor-v0}
+  }
+  \import{listings/v0fitter/refactor/}{v0.tex}
+\end{lstbox}
+
+\begin{lstbox}{%
+    \captionof{customlst}{Relevant members of the Track class in the refactored V0Fitter implementation}
+    \label{code:refactor-track}
+  }
+  \import{listings/v0fitter/refactor/}{track.tex}
+\end{lstbox}
+
+\begin{lstbox}{%
+    \captionof{customlst}{Relevant members of the Config class in the refactored V0Fitter implementation}
+    \label{code:refactor-config}
+  }
+  \import{listings/v0fitter/refactor/}{config.tex}
+\end{lstbox}

@@ -1,0 +1,15 @@
+\begin{minted}{cpp}
+namespace Belle2::NewV0Fitter {
+struct Config {
+public:
+  const std::string arrayNameRecoTracks;
+  const std::string arrayNameCopiedRecoTracks;
+  const std::tuple<double, double> invMassRangeKshort;
+  const std::tuple<double, double> invMassRangeLambda;
+  const std::tuple<double, double> invMassRangePhoton;
+  const double beamPipeRadius;
+  const double vertexChi2CutOutside;
+  const int v0FitterMode;
+};
+}
+\end{minted}

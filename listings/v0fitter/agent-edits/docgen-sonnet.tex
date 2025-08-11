@@ -1,0 +1,16 @@
+\begin{minted}[breaklines]{diff}
+(1) Correct interpretation of return value - success flag and not detection result:
++      /**
++       * Check for inner hits relative to vertex position.
++       * 
++       * @param vertexPos Position of the V0 vertex
++       * @return True if check completed successfully
++       */
+       bool checkInnerHits(const ROOT::Math::XYZVector& vertexPos);
+
+(2) Correct inference of v0FitterMode meaning:
++      const int v0FitterMode; ///< V0 fitter mode (0: store at first fit, 1: remove inner hits, 2: mode 1 + SVD restrictions)
+
+(3) pdcClosest = PDG code of the track fit result with mass closest to that of the V0 hypothesis:
++      const uint m_pdgClosest = 0; ///< PDG code of closest particle hypothesis
+\end{minted}

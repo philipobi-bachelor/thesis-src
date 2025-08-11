@@ -1,0 +1,69 @@
+In order to explore to what extent AI can assist developers in complex software ecosystems, the first objective established during the research phase of this thesis was to improve the performance and code quality of basf2's V0Fitter.
+As it is one of basf2's tracking components with a comparatively high runtime, this presented an ideal target for optimization attempts.
+
+The V0Fitter \cite{v0fitter-doxygen} is a component of the basf2 tracking package concerned with creating V0 particle candidates from reconstructed charged particle tracks.
+
+As detailed in the section of the basf2 documentation on V0 Finding \cite{v0finding-basf2} and the Belle II Physics Book \cite{b2-physics-book}, the term V0 is used to describe neutral particles that decay into two daughter particles of opposite charge.
+Due to their relatively long lifetimes, the decay vertices of V0s typically lie outside the beam pipe. As a result, their decay products require special treatment during reconstruction:
+
+In basf2, track parameters are, by default, extrapolated to the interaction point at $(0,0,0)$ prior to storage.
+For particles originating within the beam pipe, the differences introduced by this procedure are typically negligible.
+However, for particles produced outside the beam pipe, this extrapolation can result in significant deviations between the stored track parameters and the actual values at the point of particle origin.
+These discrepancies arise primarily due to the curvature of charged particle tracks in the magnetic field, which leads to notable changes in the momentum direction when extrapolated over extended distances.
+Also, material effects are taken into account during the extrapolation process.
+As a consequence, particles created outside the beam pipe are subjected to energy loss corrections intended for particles originating within the beam pipe, even though they have not actually interacted with the corresponding material, leading to systematic inaccuracies.
+
+The V0Finder module \cite{v0finder-doxygen} performs this task for the relevant V0 decays in the context of the Belle II experiment
+\begin{align*}
+  K^0_S                & \to \pi^+ + \pi^-        &
+  \Lambda^0            & \to p + \pi^-            &
+  \overline{\Lambda^0} & \to \pi^+ + \overline{p} &
+  \gamma \to e^+ e^-
+\end{align*}
+
+For a given Belle II event, the V0 reconstruction by the V0Finder module and underlying V0Fitter class proceeds roughly as detailed in Algorithm \ref{alg:v0finder}.
+
+\begin{algbox}{%
+    \captionof{customalg}{High-level overview of the V0 reconstruction algorithm}%
+    \label{alg:v0finder}%
+  }
+  \import{listings/v0fitter/algorithms/}{v0finder.tex}
+\end{algbox}
+
+\subsubsection*{Notes on Algorithm \ref{alg:v0finder}:}\label{sec:v0fitter-alg-notes}
+
+\paragraph{Inner hit detection and removal}
+During the earlier reconstruction steps in basf2, detector hits are grouped, sorted and fitted yielding higher-level track objects representing particle trajectories (see Sec.\ \ref{sec:basf2}, Par.\ \hyperref[par:reconstruction-pipeline]{\emph{Reconstruction Pipeline}}).
+
+In the context of the V0Finder, the term \emph{inner hits} is used to refer to track hits that lie before the fitted vertex position.
+Assuming that the particles and their tracks indeed originated from a V0 decay at the vertex, causality implies that the inner hits cannot have been produced by those same particles.
+For this reason, such detector measurements should not be taken into account during track and vertex fitting as they could skew the fit results.
+
+To detect and remove inner hits in a track, the V0Fitter uses a function provided by the GenFit \cite{genfit} track fitting toolkit to extrapolate the hit states, i.e.\ the fitted track parameters at the hit position, to the vertex.
+The function returns a positive or negative value depending on whether the extrapolation step had a component parallel or antiparallel to the fitted track momentum at the hit position.
+A positive value therefore implies that the hit lies before the vertex on the trajectory and is taken to be an inner hit.
+
+Given the track hits ordered by their occurrence along the trajectory, for merely detecting inner hits, performing the extrapolation only for the first hit is sufficient. 
+Removing inner hits is done by iterating over the hits, setting the hit to be excluded from subsequent fits if extrapolation returns a value $> 0$ and breaking out of the loop otherwise (see also Alg. \ref{alg:hitremoval}).
+
+\paragraph{v0FitterMode \cite{v0finding-basf2}}\label{par:v0fittermode}
+The V0Finder configuration parameter v0FitterMode accepts three possible values (0, 1, 2), each controlling the inner hit removal behavior. 
+When set to 0, the V0Fitter stores the V0 candidate immediately after the initial vertex fit without attempting inner hit removal. 
+The default value of 1 enables inner hit removal for detected hits, while a value of 2 applies additional constraints specifically to inner hit removal for SVD detector hits.
+
+\paragraph{Vertex fit and cuts}\label{par:vertex-cuts}
+The vertex fit is delegated to the RAVE \cite{rave} vertex reconstruction package through an interface of GenFit. 
+By default, GenFit configures RAVE to perform the vertex fit using a Kalman filter with smoothing enabled. 
+This process uses the pre-existing fitting information of the positive and negative track to estimate a common point of origin of the tracks, the smoothing algorithm however also refits the track parameters at the vertex.
+
+After a successful fit, the V0Fitter applies cuts to the computed vertex parameters in the following order:
+\begin{enumerate}[parsep=3pt, topsep=0pt, itemsep = 5pt]
+  \item $\rho$ of vertex position $\geq$ beamPipeRadius\par%
+  $\rho \coloneq \sqrt{x^2 + y^2}$, radial distance from the solenoid ($\approx$ beam) axis (cf.\ Fig.\ \ref{fig:belle2-schematics}, right)\par% 
+  $\text{beamPipeRadius} = 1.0$ (inner radius of the beam pipe is \qty{10}{\milli\meter})
+  %
+  \item $\chi^2$ of vertex fit result $\leq$ vertexChi2CutOutside
+  %
+  \item compute the 4-vectors $p_+,\ p_-$ using the RAVE fit results for momentum at the vertex and the known rest mass of the v0Hypothesis particle, require that:
+        $\sqrt{\left(p_+ + p_-\right)^2} \eqcolon m_\text{inv.} \in \text{v0Hyp.invMassRange}$
+\end{enumerate}

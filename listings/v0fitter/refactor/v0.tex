@@ -1,0 +1,15 @@
+\begin{minted}{cpp}
+namespace Belle2::NewV0Fitter {
+class V0 {
+public:
+  bool invMassCut(const uint tolerance = 0) const;
+  void stash(V0ObjPair&& v0ObjPair);
+  static V0 create(const Const::ParticleType& v0Hypothesis);
+private:
+  std::optional<V0ObjStash> m_v0ObjStash;
+  const Const::ParticleType& m_V0Particle;
+  const std::tuple<double, double>& m_V0InvMassRange;
+  static const Config* s_config;
+};
+}
+\end{minted}  

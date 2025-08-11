@@ -1,0 +1,44 @@
+\begin{markdown}
+**philipobi:**  
+
+Your task is to produce **100** standalone C++ code examples that are intentionally inefficient.  
+Each example should be used as an exercise for students to **find and fix** the inefficiency.
+
+...
+\end{markdown}
+\tcblower
+\begin{markdown}
+**GitHub Copilot (gemini-2.5-pro):**  
+
+Of course. Here are 100 intentionally inefficient C++ code examples for students to find and fix.
+
+...
+
+15. **Title**: Unnecessary `std::string` creation from `const char*`
+````cpp
+#include <iostream>
+#include <string>
+#include <map>
+void process_string(const std::string& s) {
+    // Does something with the string
+}
+int main() {
+    process_string("this is a string literal");
+    return 0;
+}
+````
+**Fix**: Creating a `std::string` from a string literal involves memory allocation. Overload the function to accept `const char*` or use `std::string_view` (C++17) to avoid allocation.
+````cpp
+#include <iostream>
+#include <string>
+#include <string_view>
+void process_string(std::string_view s) {
+    // Does something with the string_view
+}
+int main() {
+    process_string("this is a string literal");
+    return 0;
+}
+````
+...
+\end{markdown}

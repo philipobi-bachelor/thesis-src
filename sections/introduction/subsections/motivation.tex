@@ -1,0 +1,20 @@
+The increasing complexity of modern particle physics experiments presents unprecedented challenges for software optimization and analysis.
+
+Contemporary high-energy physics experiments generate vast amounts of data, requiring sophisticated software frameworks to process, reconstruct, and analyze particle interactions.
+As these systems grow in complexity \textemdash\ incorporating millions of lines of code, numerous interdependent modules, and intricate data processing pipelines \textemdash\ traditional optimization approaches often struggle to identify effective performance improvements.
+This complexity motivates the exploration of AI methods to enhance understanding, development, and optimization processes within large software systems, particularly those used in physics applications.
+
+The Belle II experiment's software framework, basf2 \cite{basf2}\cite{basf2-paper}, exemplifies this challenge.
+Basf2 must process data from billions of particle collisions while maintaining high precision and efficiency.
+The project's codebase is extremely large and complex, featuring code written in multiple programming languages, components inherited from different projects, and contributions from numerous authors (cf.\ Tab.\ \ref{tab:basf2-loc}). Additionally, documentation and coding conventions are not always consistent across the framework.
+If AI-driven optimization techniques prove effective in this context, they could provide a valuable pathway for improving computational efficiency and enhancing the overall scientific output of the experiment.
+
+\begin{table}[htbp]
+  \centering
+  \import{tables/}{basf2-loc.tex}
+  \caption{Source code file distribution in the basf2 repository, grouped by programming language and sorted by lines of code (generated with cloc \cite{cloc})\footnotemark}
+  \label{tab:basf2-loc}
+\end{table}%
+\footnotetext{
+  For the complete table see \repoRef{project/blob/main/artifacts/basf2-loc}{project/artifacts/basf2-loc}
+}

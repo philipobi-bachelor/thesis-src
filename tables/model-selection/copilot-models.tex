@@ -1,0 +1,17 @@
+\import{tables/}{tab-styling.tex}
+
+\begin{tabular}[table-alignment-mode=format]{l|lc|ccc|ccc| D{1}{2} D{2}{2}}
+  \multicolumn{3}{c|}{Model}                                                  & \multicolumn{3}{c|}{Mode Support} & \multicolumn{3}{c|}{Plan Availability} & \multicolumn{2}{c}{Request Multiplier} \\\hline
+  Vendor / Family                   & \multicolumn{2}{l|}{Version}            & Ask & Edit & Agent                & Free & Pro & Pro+                      & {Free} & {Paid}                        \\\hline
+  \multirow{2}{*}{OpenAI GPT}       & 4.1            & \cite{gpt-41}          & \y  & \y   & \y                   & \y   & \y  & \y                        & 1.00   & 0.00                          \\
+                                    & 4o             & \cite{gpt-4o}          & \y  & \y   & \y                   & \y   & \y  & \y                        & 1.00   & 0.00                          \\\hline
+  \multirow{2}{*}{OpenAI}           & o3             & \cite{o3}              & \y  & \y   & \n                   & \n   & \n  & \y                        & {-}    & 1.00                          \\
+                                    & o4-mini        & \cite{o4mini}          & \y  & \y   & \n                   & \n   & \y  & \y                        & {-}    & 0.33                          \\\hline
+  \multirow{5}{*}{Anthropic Claude} & Opus 4         & \cite{claude-opus4}    & \y  & \y   & \n                   & \n   & \n  & \y                        & {-}    & 10.00                         \\
+                                    & Sonnet 4       & \cite{claude-sonnet4}  & \y  & \y   & \y                   & \n   & \y  & \y                        & {-}    & 1.00                          \\
+                                    & Sonnet 3.7 Th. & \cite{claude-sonnet37} & \y  & \y   & \n                   & \n   & \y  & \y                        & {-}    & 1.25                          \\
+                                    & Sonnet 3.7     & \cite{claude-sonnet37} & \y  & \y   & \y                   & \n   & \y  & \y                        & {-}    & 1.00                          \\
+                                    & Sonnet 3.5     & \cite{claude-sonnet35} & \y  & \y   & \y                   & \y   & \y  & \y                        & 1.00   & 1.00                          \\\hline
+  \multirow{2}{*}{Google Gemini}    & 2.5 Pro        & \cite{gemini25pro}     & \y  & \y   & \y                   & \n   & \y  & \y                        & {-}    & 1.00                          \\
+                                    & 2.0 Flash      & \cite{gemini20flash}   & \y  & \y   & \n                   & \y   & \y  & \y                        & 1.00   & 0.25
+\end{tabular}

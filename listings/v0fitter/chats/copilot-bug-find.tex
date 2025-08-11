@@ -1,0 +1,26 @@
+\raggedright
+\begin{markdown}    
+**philipobi:**  
+
+Why does the implementation of Track::checkSharedInnermostCluster in #file:NewV0Fitter.cc produce different results that V0Fitter::checkSharedInnermostCluster in #file:V0Fitter.cc 
+
+Variables: `file:V0Fitter.cc`, `file:NewV0Fitter.cc`
+\end{markdown}
+\tcblower
+\raggedright
+\begin{markdown}
+**GitHub Copilot (gemini-2.5-pro):**  
+
+...
+
+1.  **Critical Bug in `tracking/v0Finding/fitter/src/NewV0Fitter.cc`**:
+    In `tracking/v0Finding/fitter/src/NewV0Fitter.cc`, there's a significant bug in how the first hit of the minus track is accessed:
+    ```cpp
+    // filepath: /project/agkuhr/users/pobi/b2/basf2-v1/tracking/v0Finding/fitter/src/NewV0Fitter.cc
+    // ...existing code...
+    const auto& firstHitInfoPlus = *hitInfoSlicePlus[0];
+    const auto& firstHitInfoMinus = *hitInfoSlicePlus[0]; // BUG: Should be *hitInfoSliceMinus[0]
+    // ...existing code...
+    ```
+...
+\end{markdown}

@@ -1,0 +1,79 @@
+\subsection{Selection of Models for Comparison}
+
+I selected four models from the GitHub Copilot Pro plan, representing the most capable offerings from each major model family: Anthropic's Claude Sonnet 4, Google Gemini 2.5 Pro, OpenAI's GPT-4o and OpenAI o4-mini.
+
+My selection was guided by data from two established LLM benchmarks: LMArena \cite{lmarena-website} (formerly Chatbot Arena \cite{lmarena-paper}) and the Artificial Analysis Index \cite{artificial-analysis-models}.
+Based on the benchmarking data, I chose the models that were available both in Ask and Agent modes%
+\footnote{\textbf{Note:} during testing, o4-mini was still available for use in Agent mode; now however, this seems to have changed (cf.\ Tab.\ \ref{tab:copilot-models-info})
+}
+and had the highest coding scores (cf.\ Tab.\
+\ref{tab:copilot-models-info},
+\ref{tab:lmarena-coding-copilot},
+\ref{tab:artificial-analysis-coding-copilot}).
+
+However, I made an error in interpreting the benchmark data when selecting a model from OpenAI's GPT family.
+Based on LMArena data showing GPT-4o outperforming GPT-4.1 in coding tasks (cf.\ Tab.\ \ref{tab:lmarena-coding-top}), I chose GPT-4o for comparison.
+I later discovered that the high-performing GPT-4o model in benchmarks represents a newer version powering ChatGPT (chatgpt-4o-latest-20250326 in Tab.\ \ref{tab:lmarena-coding-top}), while Copilot uses an older version (gpt-4o-2024-11-20%
+\footnote{According to Copilot API data \repoRef{project/blob/main/artifacts/models/copilot-models.json}{project/artifacts/models/copilot-models.json}}).
+
+Although I could not find this exact model in LMArena's data, other GPT-4o versions demonstrated considerably lower performance across benchmark categories (Tab.\ \ref{tab:lmarena-coding-copilot}).
+Similarly, Artificial Analysis, which had evaluated this specific model, found significantly lower performance compared to both GPT-4.1 and the other capable models available in Copilot (Tab.\ \ref{tab:artificial-analysis-coding-copilot}).
+
+This version mismatch likely explains the poor performance of GPT-4o-powered Copilot that I observed in my tests.
+While this oversight was unfortunate, it demonstrates that benchmark performance can indeed be indicative of real-world performance to some extent.
+
+\begin{table}[htpb]
+  \import{tables/model-selection/}{copilot-models.tex}
+  \caption{Information on GitHub Copilot model availability (retrieved 2025-08-05 \cite{copilot-models})}
+  \label{tab:copilot-models-info}
+\end{table}
+
+\begin{table}[htbp]
+  \import{tables/model-selection/}{lmarena-coding-copilot.tex}
+  \caption{LMArena performance rankings for Copilot Pro models (retrieved 2025-07-24 \cite{lmarena-website})}
+  \label{tab:lmarena-coding-copilot}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \import{tables/model-selection/}{artificial-analysis-coding-copilot.tex}
+  \caption*{\textbf{Note:} gpt-4o = gpt-4o-2024-11-20 according to source \cite{artificial-analysis-models}; 
+    filled circle: reasoning model; empty circle: non-reasoning model}
+  \caption{Artificial Analysis benchmark scores for Copilot Pro models (Intelligence and Coding Index benchmarks; retrieved 2025-08-05 \cite{artificial-analysis-models})}
+  \label{tab:artificial-analysis-coding-copilot}
+\end{table}
+
+
+
+\subsection{AI Benchmarking}
+
+As new and improved LLMs are released at a rapid pace, benchmarking serves as an essential tool for evaluating model performance and identifying optimal models for specific applications.
+However, benchmark scores can be misleading and may not accurately reflect real-world performance due to several critical limitations \cite{benchmark-contamination}\cite{trust-ai-benchmarks}:
+
+\textbf{Benchmark contamination} occurs, when training data includes benchmark test cases, resulting in artificially inflated scores through memorization rather than actual understanding or capability.
+
+\textbf{Limited real-world applicability} emerges when benchmarks focus on narrow, isolated tasks that fail to capture the complexity and variability of practical use cases.
+
+\textbf{Evaluation subjectivity} affects open-ended tasks such as text summarization and complex reasoning, where automated evaluation methods may introduce systematic biases, while human evaluation often lacks consistency across assessors.
+
+
+\vspace{\baselineskip}
+The benchmarking platforms LMArena and Artificial Analysis implement distinct methodologies to address these challenges in evaluating LLMs.
+
+LMArena functions as an open platform that assesses language models based on crowdsourced human preferences \cite{lmarena-paper}.
+Users are presented with responses from two anonymous models and select the one they find preferable in a pairwise comparison format.
+This dynamic setup reduces benchmark contamination by relying on live user-submitted questions rather than fixed datasets.
+It also mitigates evaluation subjectivity by collecting feedback from a broad and linguistically diverse user base.
+
+In contrast, Artificial Analysis follows a more standardized approach, conducting evaluations across multiple established benchmark suites \cite{artificial-analysis-methodology}.
+Its Intelligence Index aggregates model performance in reasoning, mathematics, and programming using weighted averages of existing benchmarks.
+The Coding Index specifically measures programming ability by combining results from several code generation benchmarks.
+
+Both platforms emphasize transparency by openly documenting their evaluation procedures and using standardized testing conditions.
+They also implement robust validation methods to ensure the reliability of their assessments.
+LMArena applies statistical techniques to rank models based on user preferences.
+Artificial Analysis uses a combination of automated grading and LLM verification to validate responses.
+Together, these platforms offer complementary perspectives on model performance by balancing real-world user interaction with structured evaluation frameworks.
+
+A comparison of benchmarking results from both platforms shows that model rankings are not identical across benchmarks.
+However, while the ranking order in LMArena does not exactly match that of Artificial Analysis, models that perform well on one benchmark generally also achieve higher rankings on the other (cf.\ Tab.\ \ref{tab:lmarena-coding-top}, \ref{tab:artificial-analysis-coding-top}).

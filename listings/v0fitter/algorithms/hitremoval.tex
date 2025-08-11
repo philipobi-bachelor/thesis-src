@@ -1,0 +1,30 @@
+zip : $\bigl((a_1,\ \ldots,\ a_N),\ (b_1,\ \ldots,\ b_N)\bigr) \longmapsto \bigl((a_1, b_1),\ \ldots,\ (a_N, b_N)\bigr),\quad N\in\mathbb{N}$
+\tcblower%
+\SetAlgoVlined
+\begin{algorithm}[H]
+  \subimport{}{alg-styling.tex}
+  \Func{V0Fitter::removeInnerHitsAndRefit(track, vertexPos, particleHyp)}{
+    \tcp*[l]{NewV0Fitter: only copy and modify a bool vector of useInFit flags at first}
+    trackCopy $\coloneq$ copyRecoTrackWithHits(track)\;
+    \For{(hitCopy, hit) $\in$ zip(trackCopy.hits, track.hits)}{
+      \If{not hit.useInFit}{
+        hitCopy.useInFit $\coloneq$ false\;
+        continue\;
+      }
+      \;
+      \If{extrapolateToPoint(hit.state, vertexPos) $> 0$}{
+        hitCopy.useInFit $\coloneq$ false\;
+      }
+      \Else{
+        break\;
+      }
+    }
+    \tcp*[l]{NewV0Fitter: copy track here if more hits removed, apply useInFit vector to the copy}
+    TrackFitter::fit(trackCopy, particleHyp)\;
+    return trackCopy\;
+  }
+
+\end{algorithm}
+
+
+

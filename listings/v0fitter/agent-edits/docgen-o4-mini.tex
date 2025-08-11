@@ -1,0 +1,22 @@
+\begin{minted}[breaklines]{diff}
+(1) Inference of the v0FitterMode meaning from the code:
++       * @param v0FitterMode Mode of operation (0=force store,1=standard,2=useOneSVDHitPair).
+Note: v0FitterMode determines the values of the forcestore and useOnlyOneSVDHitPair bool configuration members
+(2) The destructor resets the cardinal rep. of the wrapped genfit::Track, if modified
++      /**
++       * @brief Destructor resets smudge on original container if applied.
++       */
+       ~TrackContainer();
+(3) More meaningful documentation for pdgClosest than other models:
++      /**
++       * @brief Construct TrackContainer wrapping a RecoTrack and PDG hypothesis.
++       * @param recoTrack Pointer to RecoTrack object.
++       * @param pdgClosest PDG code of closest mass hypothesis.
++       * @param isOriginal Flag indicating original track container.
++       */
+       TrackContainer(
+           RecoTrack* recoTrack,
+           const uint pdgClosest,
+           const bool isOriginal = true
+       );
+\end{minted}

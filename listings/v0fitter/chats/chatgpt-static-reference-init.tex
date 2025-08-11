@@ -1,0 +1,22 @@
+\textbf{Prompt:} set static reference member of a class from a function
+\tcblower
+\textbf{ChatGPT} (o4-mini):\par
+\begin{markdown}
+...
+
+1. **Initialize the `static` reference at its definition** (outside the class).  
+2. **Use a pointer (or a `std::reference_wrapper`) instead, so you can assign it later.**
+
+...
+
+```cpp
+// MyClass.cpp
+#include "MyClass.hpp"
+
+// You still have to “define” it somewhere. This default-constructs the wrapper.
+// Internally, reference_wrapper keeps a pointer—but it starts as a null pointer.
+std::reference_wrapper<Foo> MyClass::globalFooRef = std::reference_wrapper<Foo>(*(Foo*)nullptr);
+```
+
+...
+\end{markdown}

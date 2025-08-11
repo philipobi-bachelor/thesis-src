@@ -1,0 +1,20 @@
+\import{tables/}{tab-styling.tex}
+
+\newcolumntype{E}{S[
+      scientific-notation = true,
+      table-format = 1.2e2,
+      table-column-width=1.2cm
+]}
+
+\newcommand{\callsHd}{{\textbf{Calls}}}
+\newcommand{\instrHd}{{\textbf{Instr.}}}
+\newcommand{\instrpcHd}{{\textbf{I\%/Call}}}
+\newcommand{\method}{\textbf{Method}}
+\newcommand{\totalInstr}{\textbf{Total Instructions}}
+\renewcommand{\arraystretch}{1.2}
+
+\newcommand{\instrCount}[1]{\num[scientific-notation=true, round-mode=figures, round-precision=3]{#1}}
+\newcommand{\instrCountVF}{86941327344}
+\newcommand{\instrCountNewVF}{38136800115}
+\newcommand{\instrCountVFRef}{26154900505}
+\newcommand{\na}{{---}}

@@ -1,0 +1,12 @@
+[submodule "static/validation"]
+	path = static/validation
+	url = ../validation.git
+[submodule "static/code-optimization-test"]
+	path = static/code-optimization-test
+	url = ../code-optimization-test.git
+[submodule "static/project"]
+	path = static/project
+	url = ../project.git
+[submodule "static/profiling"]
+	path = static/profiling
+	url = ../profiling.git

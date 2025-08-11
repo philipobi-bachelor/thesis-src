@@ -1,0 +1,32 @@
+\thispagestyle{plain}
+
+\newgeometry{left=3.5cm, right=3.5cm, top=3cm, bottom=3cm}
+\begin{spacing}{1.2}
+  \large
+
+  \begin{center}
+    \vspace*{2cm}
+    \textbf{\Large Abstract}
+    \vspace{1.5cm}
+  \end{center}
+
+  
+    This thesis explores the potential of artificial intelligence (AI) methods for software development, specifically code optimization tasks.
+    
+    The research focuses on evaluating these capabilities within the complex codebase of Belle II's basf2 software, testing performance in code analysis, documentation, and optimization during the refactoring of basf2's V0Fitter.
+    Performance was also assessed on generic C++ code containing common inefficiencies.
+
+    Four large language models (LLMs) were evaluated: Claude Sonnet 4, Gemini 2.5 Pro, GPT-4o, and o4-mini, with Claude Sonnet 4 demonstrating the highest performance overall.
+
+    The refactored V0Fitter achieved over 50\% reduction in per-event execution time compared to the current implementation.
+    Testing revealed that current LLMs face significant limitations when autonomously optimizing code in complex software environments such as basf2, often struggling with intricate logic and producing inconsistent results.
+    Nevertheless, they proved valuable for code analysis, codebase exploration, and bug detection.
+
+    For medium- to low-complexity tasks, LLMs demonstrated improved autonomous optimization performance, though code quality varied by model and specific example.
+
+    Beyond formal testing, AI tools significantly accelerated development through natural language querying and contextual understanding.
+
+    However, notable concerns include potential for confident incorrect responses, code vulnerabilities, and environmental impact considerations.
+
+\end{spacing}
+\restoregeometry

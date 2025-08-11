@@ -1,0 +1,14 @@
+\import{tables/}{tab-styling.tex}
+
+\newcommand{\unitSpec}[1]{$\left[\unit{#1}\right]$}
+
+\centering
+\begin{tabular}{ l r | D{3}{1}  D{2}{1}  D{1}{1}  D{2}{1}  D{2}{1}  D{3}{1}  D{3}{1} }
+  Method                                      &                          & {mean} & {std} & {min} & {25\%} & {50\%} & {75\%} & {max} \\\hline
+  V0FinderModule::event                       & \unitSpec{\milli\second} & 114.4  & 90.7  & 0.0   & 53.0   & 92.1   & 153.4  & 867.5 \\\hline
+  \hspace{1em}NewV0Fitter::fitAndStore        & \unitSpec{\percent}      & 97.4   & 15.1  & 0.0   & 99.7   & 99.7   & 99.7   & 99.9  \\\hline
+  \hspace{2em}NewV0Fitter::vertexFit          & \unitSpec{\percent}      & 90.9   & 16.8  & 0.0   & 88.8   & 98.4   & 99.0   & 99.5  \\\hline
+  \hspace{3em}NewV0Fitter::fitGFRaveVertex    & \unitSpec{\percent}      & 62.9   & 12.6  & 0.0   & 59.8   & 65.3   & 69.6   & 87.1  \\\hline
+  \hspace{2em}NewV0Fitter::removeHitsAndRefit & \unitSpec{\percent}      & 5.8    & 9.3   & 0.0   & 0.0    & 0.0    & 9.3    & 61.6  \\
+\end{tabular}
+

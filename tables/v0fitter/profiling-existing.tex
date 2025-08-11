@@ -1,0 +1,12 @@
+\subimport{}{profiling-header.tex}
+
+\begin{tabular}[table-alignment-mode=format]{ l | I{4} E D{1}{4} | I{4} E D{1}{4} }
+                              & \multicolumn{3}{c|}{V0Fitter}    & \multicolumn{3}{c}{NewV0Fitter}  \\ \hline
+  \method                     & \callsHd & \instrHd & \instrpcHd & \callsHd & \instrHd & \instrpcHd \\ \hline
+  TrackFitter::fit            & 252      & 3.42E+10 & 0.1561     & 28       & 3.54E+09 & 0.3312     \\
+  fitGFRaveVertex             & 1391     & 1.69E+10 & 0.0140     & 1183     & 1.44E+10 & 0.0318     \\
+  copyRecoTrack               & 286      & 1.90E+09 & 0.0077     & 28       & 1.95E+08 & 0.0182     \\
+  extrapolateToPoint          & 3216     & 1.67E+10 & 0.0060     & 806      & 4.78E+09 & 0.0156     \\
+  genfit::Track::Track        & 2782     & 1.43E+10 & 0.0059     & 2366     & 1.27E+10 & 0.0141     \\ \hline
+  \textbf{Total Instr. Count} &          & 8.69E+10 &            &          & 3.81E+10 &            \\
+\end{tabular}

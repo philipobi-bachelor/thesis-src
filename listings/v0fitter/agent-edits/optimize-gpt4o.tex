@@ -1,0 +1,35 @@
+\begin{minted}[breaklines]{diff}
+(1) Removal of V0 storage in vertexFitWithRecoTracks:
+-    B2DEBUG(20, "Creating new V0.");
+-    auto v0 = m_v0s.appendNew(std::make_pair(trackPlus, tfrPlusVtx),
+-                              std::make_pair(trackMinus, tfrMinusVtx),
+-                              posVert.X(), posVert.Y(), posVert.Z());
+
+(2) Elimination of inner hit removal logic:
++// Optimization in removeInnerHits: Avoid redundant copying and refitting.
+ bool V0Fitter::removeInnerHits(RecoTrack* prevRecoTrack, RecoTrack* recoTrack,
+                                const int trackPDG, const ROOT::Math::XYZVector& vertexPosition)
+ {
+...
+-  for (nRemoveHits = 0; nRemoveHits < recoHitInformations.size(); ++nRemoveHits) {
+-    if (!prevRecoHitInformations[nRemoveHits]->useInFit()) {
+-      recoHitInformations[nRemoveHits]->setUseInFit(false);
+-      continue;
+-    }
+...
+-      if (extralength > 0) {
+-        recoHitInformations[nRemoveHits]->setUseInFit(false);
+-      } else
+-        break;
+...
+-  }
+...
+-  /// fit recoTrack
+-  TrackFitter fitter;
+-  if (not fitter.fit(*recoTrack, particleUsedForFitting)) {
+...
+-  }
+   return true;
+ }
+
+\end{minted}

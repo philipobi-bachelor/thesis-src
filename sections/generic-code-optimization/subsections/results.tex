@@ -1,0 +1,139 @@
+From the collected evaluation and benchmarking data, I programmatically generated comprehensive results tables that present relevant information regarding GitHub Copilot's optimization performance across the different test scenarios.
+
+Tables \ref{tab:unoptimized-test1} and \ref{tab:unoptimized-test2} present relevant result data for test files 1 and 2 respectively when compiled without optimizations (-O0 flag). 
+Tables \ref{tab:optimized-test1} and \ref{tab:optimized-test2} in the appendix show the corresponding results when the code was compiled with compiler optimizations enabled (-O3 flag).
+
+Table \ref{tab:generic-code-opt-summary} summarizes the optimization test results, showing the distribution of inefficient implementations between the two test files, and the number of examples successfully improved by each GitHub Copilot model.
+
+\begin{table}[h]
+  \centering
+  \import{tables/generic-code-optimization/}{summary.tex}
+  \caption{Summary of optimization improvements by model across test files}
+  \label{tab:generic-code-opt-summary}
+\end{table}
+
+\paragraph{Legend for Tables 
+\ref{tab:unoptimized-test1},
+\ref{tab:unoptimized-test2},
+\ref{tab:optimized-test1},
+\ref{tab:optimized-test2}%
+}
+\begin{itemize}
+  \item \textbf{Task number / Description}: Short description of the inefficiency in each test example; full implementation details available in the Markdown file containing all examples selected for testing% 
+        \footnote{\repoRef{code-optimization-test/blob/main/examples.md}{code-optimization-test/examples.md}}
+
+  \item \textbf{average(elapsed)}: Mean wall-clock execution time measured by nanobench for one execution of the example code
+
+  \item \textbf{bl}: Baseline performance representing \emph{average(elapsed)} for the efficient implementation of each task
+
+  \item \textbf{s/bl}: Performance ratio $\log_{10}(slow / bl)$, where \emph{slow} is \emph{average(elapsed)} for the inefficient implementation; a measure of performance degradation of the inefficient version relative to the efficient baseline
+
+  \item \textbf{s?}(=slow?):  Indicator denoting which implementation version was in the test file; filled circle: inefficient version present; empty circle: efficient version present
+
+  \item \textbf{Model columns}: Each model's results are displayed in two columns:
+        \begin{itemize}
+          \item \textbf{Left column}: Modification status indicator
+                \begin{itemize}
+                  \item Filled circle: Inefficient implementation was present and Copilot modified the code
+                  \item Half-filled circle: Efficient implementation was present and Copilot modified the code
+                  \item Empty circle: Copilot made no modifications to the code
+                  \item Red highlighting: Inefficient implementation was present but Copilot failed to modify the code
+                  \item Green highlighting: Inefficient implementation was present and Copilot modified the code
+                \end{itemize}
+          \item \textbf{Right column}: Performance metric
+                \begin{itemize}
+                  \item Value equals $\log_{10}(c / bl)$, where \emph{c} is \emph{average(elapsed)} for the example's code after Copilot's modifications
+                  \item No highlighting: Efficient version was present and $\log_{10}(c / bl) \in (-0.1,\ 0.1)$
+                  \item Color mapping for other cases: Green tones denote performance similar or better than baseline; yellow and red tones show performance degradation
+                \end{itemize}
+                \item \textbf{Model abbreviations}: c-s-4 = Claude Sonnet 4, g-2.5-p = Gemini 2.5 Pro
+        \end{itemize}
+  \item \textbf{Note}: I implemented cell coloring to enhance the interpretability of model performance across the large dataset by highlighting patterns that may be difficult to detect from the raw data alone.
+\end{itemize}
+
+\begin{table}
+  \centering
+  \import{tables/generic-code-optimization/}{unoptimized-test1.tex}
+  \caption{Copilot optimization results for Test File 1 (benchmarks compiled with -O0)}
+  \label{tab:unoptimized-test1}
+\end{table}
+
+\begin{table}
+  \centering
+  \import{tables/generic-code-optimization/}{unoptimized-test2.tex}
+  \caption{Copilot optimization results for Test File 2 (benchmarks compiled with -O0)}
+  \label{tab:unoptimized-test2}
+\end{table}
+
+\subsubsection*{Notable Observations}
+
+The evaluation results demonstrate clear performance differences between the underlying models powering GitHub Copilot.
+
+Claude Sonnet 4 emerged as the strongest performer, successfully detecting and optimizing the highest number of inefficient examples across both test files (Tab.\ \ref{tab:generic-code-opt-summary}).
+
+This superior performance is further corroborated by the detailed benchmarking data, which shows that code implementations modified by the Claude Sonnet-powered Copilot typically achieved at least baseline performance levels, with multiple cases even demonstrating improvements beyond the baseline efficient versions (Tab.\ \ref{tab:unoptimized-test1}, \ref{tab:unoptimized-test2}).
+
+\vspace{\baselineskip}
+Example 43 in test file 1 illustrates a case where Claude Sonnet 4 successfully identified an optimization opportunity but did not achieve sufficient improvement to reach baseline performance (Tab.\ \ref{tab:unoptimized-test1}).
+The inefficient version employs a std::map for storing and retrieving values, using dense integer keys ranging from 0 to 9999.
+The efficient reference implementation replaces this structure with a std::vector, utilizing the integer key directly as a vector index for value access.
+
+Claude Sonnet 4's optimization involved replacing the std::map with a std::unordered\_map to enable faster key access, while additionally performing accumulation of the stored values directly during insertion, instead of looping over the keys twice.
+Although benchmarking data confirms this modification improves performance, the implementation still exhibits considerable performance overhead compared to the vector-based approach.
+
+\vspace{\baselineskip}
+Example 34 demonstrates a more sophisticated optimization where Claude Sonnet 4 effectively \enquote{outsmarted} the test design.
+This example involves repeated string lookups in a set, with the inefficient reference implementation using std::set and the efficient version employing std::unordered\_set for constant-time lookup complexity.
+
+In both test scenarios, with either the inefficient version or the efficient reference version present, Claude Sonnet 4 recognized that the search target remained constant across all iterations.
+Rather than optimizing the data structure, it restructured the code to perform the search operation only once and multiply the result by the number of iterations.
+This approach yielded dramatic performance improvements, reducing runtime by more than four orders of magnitude compared to the efficient baseline.
+
+Similar \enquote{outsmarting} behavior occurred in most cases where significant runtime improvements beyond the baseline were achieved, not exclusively with Claude Sonnet 4 but also with other models, particularly o4-mini and Gemini 2.5 Pro.
+For instance, in example 34, o4-mini implemented the identical optimization as Claude Sonnet 4 when the inefficient version was present, though notably failed to achieve further improvements when the reference efficient version was included in the test file (cf.\ Lst.\ \ref{lst:outsmarting-o4-mini}, Tab.\ \ref{tab:unoptimized-test1}, \ref{tab:unoptimized-test2}).
+
+\vspace{\baselineskip}
+One exception in the evaluation data concerns example 50 in test file 2 for Claude Sonnet 4.
+While the model successfully modified and optimized the inefficient example, it did so by significantly altering the code's functionality (Lst.\ \ref{lst:sonnet-fibonacci}).
+Consequently, I classified this as \enquote{not fixing the code} despite benchmarking results showing performance gains from the optimization (Tab.\ \ref{tab:unoptimized-test2}).
+
+\vspace{\baselineskip}
+The results suggest that more common inefficiencies are easier for models to detect and improve.
+For example, the performance issue introduced by column-major matrix traversal (Example 44, Tab.\ \ref{tab:unoptimized-test1}) was successfully identified and optimized by all tested models, even GPT-4o.
+
+\vspace{\baselineskip}
+Based on the count of detected and improved inefficient examples, as well as a qualitative review of the comprehensive results tables, Gemini 2.5 Pro ranks second in performance, o4-mini third, and GPT-4o last by a wide margin, having detected only 9 out of 50 inefficient examples.
+
+\vspace{\baselineskip}
+Comparing benchmarking data between -O0 and -O3 compilation flags reveals that while absolute runtimes differ substantially, the performance ratios between inefficient and efficient versions do not show any drastic changes: 
+Many slow examples maintain logarithmic ratios near zero compared to the fast baseline across both compilation settings.
+
+Several factors may explain these observations:
+\begin{itemize}[topsep=0pt]
+  \item Compilation with -O0 disables some but not all optimizations
+  \item The primary performance overhead may stem from benchmarking instrumentation or print statements, making the effect of the intentionally introduced inefficiencies insignificant in comparison
+  \item The overall quality of examples is limited, as they were not hand-crafted to maximize performance differences between inefficient and efficient versions
+\end{itemize}
+
+\vspace{\baselineskip}
+Despite these limitations, I consider the data collected in this evaluation to provide a meaningful assessment of the selected AI models' code optimization capabilities.
+
+\begin{lstbox}{%
+    \captionof{customlst}{
+      \enquote{Outsmarting} behavior displayed by o4-mini\footnotemark, (analogous for Claude Sonnet 4)
+    }
+    \label{lst:outsmarting-o4-mini}
+  }
+  \import{listings/v0fitter/agent-edits/}{outsmarting-o4-mini.tex}
+\end{lstbox}%
+\footnotetext{\repoRef{code-optimization-test/blob/main/chat-logs/test1/o4-mini.md}{code-optimization-test/chat-logs/test1/o4-mini.md}}
+
+\begin{lstbox}{%
+    \captionof{customlst}{
+      Claude Sonnet 4 modification restricts function to $n \leq 40$ and indiscriminately computes the first 41 Fibonacci numbers\footnotemark
+    }
+    \label{lst:sonnet-fibonacci}
+  }
+  \import{listings/v0fitter/agent-edits/}{sonnet-fibonacci.tex}
+\end{lstbox}%
+\footnotetext{\repoRef{code-optimization-test/blob/main/chat-logs/test2/claude-sonnet-4.md}{code-optimization-test/chat-logs/test2/claude-sonnet-4.md}}

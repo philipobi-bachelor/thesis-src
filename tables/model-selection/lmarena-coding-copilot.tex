@@ -1,0 +1,15 @@
+\import{tables/}{tab-styling.tex}
+
+\def\lmarenaHeader{%
+  Model & {Overall} & {\makecell[cb]{Hard \\ Prompts}} & {Coding} & {Math} & {\makecell[cb]{Instruction \\ Following}} & {\makecell[cb]{Longer \\ Query}} \\ \hline
+}
+
+\begin{tabular}{ l | I{2} I{2} I{2} I{2} I{2} I{2} }
+    \lmarenaHeader
+    gemini-2.5-pro                          & 1  & 1  & 1  & 1  & 1  & 1  \\ \hline
+    gpt-4.1-2025-04-14                      & 6  & 4  & 6  & 16 & 8  & 4  \\ \hline
+    claude-sonnet-4-20250514                & 13 & 11 & 7  & 7  & 8  & 5  \\ \hline
+    o4-mini-2025-04-16                      & 13 & 12 & 10 & 3  & 17 & 20 \\ \hline
+    claude-3-7-sonnet-20250219-thinking-32k & 19 & 12 & 15 & 12 & 7  & 5  \\ \hline
+    gpt-4o-2024-05-13                       & 39 & 48 & 43 & 45 & 44 & 42
+  \end{tabular}
